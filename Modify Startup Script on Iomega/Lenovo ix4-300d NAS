@@ -1,0 +1,458 @@
+Modify Startup Script on Iomega/Lenovo ix4-300d NAS
+https://diyprojects.tech/2013/04/modify-startup-script-on-iomegalenovo-ix4-300d-nas/
+
+
+Skip to content
+IX4-300d custom startup script	
+
+    April 27, 2013
+    25 Comments
+
+Modify Startup Script on Iomega/Lenovo ix4-300d NAS
+Steven
+Steven
+
+We want our installed applications to be started whenever we start or restart our NAS without having to log in with ssh and start the service manually. This can be done by creating a “Startup” script and telling your NAS to execute it every boot/reboot. Then we can add as many services as we want.
+
+Requirements
+
+!!! Doing this will void your warranty !!!
+!!! Do this on your own risk, this may break your NAS !!!
+
+– SSH Access(Guide Here)
+Creating a Startup Script
+Login to your NAS, and create the Startup script “init.opt.sh”:
+
+nano /opt/init-opt.sh
+
+Paste this code in your startup script
+
+#!/bin/sh
+rm /opt/init-opt.log
+echo "Last bootup:" >> /opt/init-opt.log
+date >> /opt/init-opt.log
+echo "Wait one minute, so that the storage pool 
+is mounted" >> /opt/init-opt.log
+sleep 1m
+# Services after this line
+
+# Services before this line
+sleep 360d
+reboot
+
+Save (CTRL+O and ENTER) and exit (CTRL+X), now make the file executable:
+
+chmod +x /opt/init-opt.sh
+
+now make a new file “editconfig.sh” :
+
+nano /opt/editconfig.sh
+
+and paste this code in your “editconfig.sh”:
+
+#!/bin/sh
+mknod -m0660 /dev/loop3 b 7 3
+chown root.disk /dev/loop3
+mkdir /tmp/apps
+mount -o loop /boot/images/apps /tmp/apps
+nano /tmp/apps/usr/local/cfg/sohoProcs.xml
+sleep 1
+umount /tmp/apps
+rm /dev/loop3
+
+now save the file (CTRL+O … ENTER) and exit (CTRL+X) and now make the file executable:
+
+chmod +x /opt/editconfig.sh
+
+Now run the script :
+
+/opt/editconfig.sh
+
+(Don’t remove the editconfig file, it is needed in other guides too)
+
+Now select your firmware version below to continue modifying your startup script :
+Add code for 3.3.4.29856 and older
+
+now a (nano) editor will open, scroll down and add following lines inside group 1 under mozzyclient like in the screenshot below. you may have to scroll a while:
+
+<Program Name="init-opt.sh" Path="/opt/init-opt.sh">
+<SysOption Restart="-1"/>
+</Program>
+
+Putty Startup Script
+
+To save the file, hit CTRL+O, then ENTER to write the file (nano should say “wrote 2xx lines”) then hit CTRL+X to exit the editor. If you are a 100% sure your file is correct, restart your Nas. !!!Only restart your NAS when 100% sure the file is correct, pasting this code wrong or editing anything else in this file may/will break your NAS!!!
+Add code for 4.0.2.9960 and up
+
+now a (nano) editor will open, scroll down and add following lines inside group 1 before the </Group>:
+
+<Program Name="init-opt.sh" Path="/opt/init-opt.sh">
+<SysOption Restart="-1"/>
+</Program>
+
+ix4300dpreserveupdate102
+
+To save the file, hit CTRL+O, then ENTER to write the file (nano should say “wrote 2xx lines”) then hit CTRL+X to exit the editor. If you are a 100% sure your file is correct, restart your Nas. !!!Only restart your NAS when 100% sure the file is correct, pasting this code wrong or editing anything else in this file may/will break your NAS!!!
+Adding Startup Services
+Add the line that’s required to start a daemon to the “init-opt.sh” file. These lines are given at the end of every NAS Service tutorial on this site!
+
+to view the logfile created every time the startup script is executed.
+
+cat /opt/init-opt.log
+
+Startup Script Example
+
+#!/bin/sh
+rm /opt/init-opt.log
+echo "Last bootup:" >> /opt/init-opt.log
+date >> /opt/init-opt.log
+echo "Wait one minute, so that the storage pool is mounted" >> /opt/init-opt.log
+sleep 1m
+###########################
+# Services after this line
+PATH=$PATH:/opt/bin
+
+#Transmission
+/opt/bin/transmission-daemon --config-dir /mnt/pools/A/A0/Downloads/config/transmission/ --allowed *.*.*.* >> /opt/init-opt.log
+echo "Transmission Started " >> /opt/init-opt.log
+
+#Sabnzbd
+/opt/bin/python2.6 /mnt/pools/A/A0/Downloads/.apps/sabnzbd/SABnzbd.py --server 0.0.0.0 --daemon
+echo "SABnzbd Started" >> /opt/init-opt.log
+
+#Couchpotato
+/opt/bin/python2.6 /mnt/pools/A/A0/Media/.Apps/CouchPotatoServer/CouchPotato.py --data_dir /mnt/pools/A/A0/Media/.Apps/_config/couchpotato/ --daemon
+echo "Couchpotato Started" >> /opt/init-opt.log
+
+#Sickbeard
+/opt/bin/python2.6 /mnt/pools/A/A0/Media/.Apps/Sick-Beard/SickBeard.py --daemon
+echo "Sickbeard Started" >> /opt/init-opt.log
+
+#Minecraft
+PATH=$PATH:/mnt/pools/A/A0/Downloads/minecraft/ejre1.7.0_21/bin
+export PATH
+cd /mnt/pools/A/A0/Downloads/minecraft/mc
+java -Xms256M -Xmx512M -jar minecraft.jar nogui
+echo "Minecraft Started" >> /opt/init-opt.log
+
+# Services before this line
+###########################
+sleep 360d
+reboot
+
+Share&Like:
+
+    FacebookTwitterWhatsAppPinterestLinkedInPrintRedditTumblrTelegramPocket
+
+Like this:
+Share:
+Facebook
+Twitter
+Pinterest
+LinkedIn
+25 Responses
+
+    Guido Verholen says:	
+    December 18, 2013 at 11:31 am	
+
+    Hi,
+    I followed the instructions and it went well until I wanted to change the startup file, there is no “nano” folder
+    I have an X2 instead of a X4.
+
+    grt, Guido verholen(Belgium)
+    Reply
+        Steven says:	
+        December 18, 2013 at 3:54 pm	
+
+        “nano” is the program that allows you to edit text files, you can change every “nano” by “vi” or “vim”, these are text editors but are a bit different:
+        -to insert text => type i then type your text
+        -to save => ESC -> :wq -> enter
+
+        you can also try to install “nano” by using one of the following lines:
+        – /opt/bin/ipkg install nano
+        – apt-get install nano
+
+        always double check your files before restarting, wrong code can break your Nas!!
+        Reply
+    Nick Wood says:	
+    April 3, 2014 at 12:01 am	
+
+    Hi Steven
+
+    I was attempting to do this and when I went to say I noticed the filename was sohoprocs.xml so I decided to not save my changes.
+
+    Running /opt/editconfig.sh, the file is now empty… Have I totally screwed something up?
+    Reply
+        Nick Wood says:	
+        April 3, 2014 at 12:05 am	
+
+        root@NAS:/# /opt/editconfig.sh << First time open, CTRL+X, N to save changes
+        root@NAS:/# /opt/editconfig.sh << Empty File Now?
+        mkdir: cannot create directory `/tmp/apps': File exists
+        mount: could not find any free loop device
+        umount: /tmp/apps: not mounted
+        Reply
+            Steven says:	
+            April 3, 2014 at 5:39 pm	
+
+            The editconfig.sh should not be empty after execution, this file should be executed after every update to restore your servers. I would recommend removing your files and try this guide again, i found a small fault in the guide… this may be the problem.
+            Reply
+                Nick Wood says:	
+                April 3, 2014 at 5:48 pm	
+
+                Sorry, the editconfig.sh isn’t empty, but the sohoProcs file that it generates doesn’t populate with any values since running it that first time. It’s blank when I run /opt/editconfig.sh for some reason
+                Reply
+                    Steven says:	
+                    April 3, 2014 at 5:52 pm	
+
+                    sounds like the editconfig has a wrong path or filename and created a new file, paths and filenames are case sensitive… did you copy-paste the file or just typed it? check if your editconfig is the same as mine.
+                    Reply
+                    Nick Wood says:	
+                    April 3, 2014 at 6:04 pm	
+
+                    I copy pasted everything listed above.
+
+                    Thought I’d try and start over so I deleted the init-opt.sh and the editconfig.sh, and also removed /tmp/apps
+
+                    http://goo.gl/cWBLMV
+
+                    root@NAS:/opt# rm editconfig.sh
+                    root@NAS:/opt# rm init-opt.sh
+                    root@NAS:/opt# cd ..
+                    root@NAS:/# nano /opt/init-opt.sh
+                    root@NAS:/# chmod +x /opt/init-opt.sh
+                    root@NAS:/# nano /opt/editconfig.sh
+                    root@NAS:/# chmod +x /opt/editconfig.sh
+                    root@NAS:/# /opt/editconfig.sh
+                    mount: could not find any free loop device
+                    umount: /tmp/apps: not mounted
+                    root@NAS:/# /opt/editconfig.sh
+                    mkdir: cannot create directory `/tmp/apps’: File exists
+                    mount: could not find any free loop device
+                    umount: /tmp/apps: not mounted
+                    root@NAS:/#
+
+                    I should’ve just saved the file the first time it generated 🙁
+                    Reply
+    rmilyard says:	
+    July 22, 2014 at 6:36 pm	
+
+    Looks like my programs aren’t starting up after reboot. I can start them myself.
+
+    #!/bin/sh
+    rm /opt/init-opt.log
+    echo “Last bootup:” >> /opt/init-opt.log
+    date >> /opt/init-opt.log
+    echo “Wait one minute, so that the storage pool
+    is mounted” >> /opt/init-opt.log
+    sleep 1m
+    # Services after this line
+    #Sabnzbd
+    /opt/bin/python2.6 /mnt/pools/A/A0/Downloads/.apps/sabnzbd/SABnzbd.py –server $
+    echo “SABnzbd Started” >> /opt/init-opt.log
+    #Couchpotato
+    /opt/bin/python2.6 /mnt/pools/A/A0/Downloads/.apps/CouchPotatoServer/CouchPotat$
+    echo “Couchpotato Started” >> /opt/init-opt.log
+    #Sickbeard
+    /opt/bin/python2.6 /mnt/pools/A/A0/Downloads/.apps/Sick-Beard/SickBeard.py –da$
+    echo “Sickbeard Started” >> /opt/init-opt.log
+    # Services before this line
+    sleep 360d
+    Reply
+        Steven says:	
+        July 22, 2014 at 7:01 pm	
+
+        is the script executed? check if there is a “init-opt.log” file, also did you do the chmod +x (add execute rights)? you can try “chmod 777 /opt/init-opt.sh”. also are you logged in as root?
+        Reply
+            rmilyard says:	
+            July 22, 2014 at 7:09 pm	
+
+            I think so. Following guide. I just keep having issues. Not sure why because first time I did this wasn’t near as hard.
+            Reply
+    Marius says:	
+    July 27, 2014 at 7:39 am	
+
+    In the last firmware update (4.x) I think it is LEVEL 2 where you have to add
+    Reply
+    umair says:	
+    April 9, 2015 at 10:53 am	
+
+    I have PX-300D running version 4.1.108.32627. When I run /etc/editconfig.sh and modify the XML under Group Level 1, paste the new program …i am unable to save the sohoProcs.xml doing CTRL+O -> Enter. i get the following message: “Error writing /tmp/apps/usr/local/cfg/sohoProcs.xml: Read-only file system” .
+    Reply
+        Steven says:	
+        April 9, 2015 at 11:45 am	
+
+        are you logged in with a admin account, you could try sudo or su?
+        Reply
+    Dagus says:	
+    November 11, 2015 at 6:12 am	
+
+    Hello, I think I bricked It. I followed the instructions above (copy and pasted.) I cannot access the nas any more–web access, share or ssh. I rebooted the nas, it goest through disk configuration, displays the ip address and time. I tried to press the arrow keys but it doesn’t switch displays. When I try to access the webgui, it stuck at “processing” and the nas display goes blank. The firmware is 4.1.114.33421.
+
+    Please, is there a way to revert back or re-image the firmware?
+    Thank you!
+    Reply
+        Dagus says:	
+        November 11, 2015 at 4:23 pm	
+
+        I managed to ssh into the nas while it was booting. While having the xml file opened in nano, I somehow prevented something to execute and the box booted fine. I reverted the changes and reboot. NAS is back to normal now.
+        Thanks.
+        Reply
+            Steven says:	
+            November 13, 2015 at 5:17 pm	
+
+            I’m glad you managed to fix your NAS, havn’t tested the latest firmware myself yet but it should still work.
+            Reply
+    Yury says:	
+    January 5, 2016 at 11:45 am	
+
+    Hi Steven! After modifications of the startup script my IX4-300d NAS hangs on 75% load. Only ping, no shares, no web or ssh access. Is it possible reset to factory defaults any way?
+    Reply
+        Steven says:	
+        January 5, 2016 at 5:57 pm	
+
+        you should look trough the comments, there’s been someone with the same problem who fixed it.
+        Reply
+    Job says:	
+    March 10, 2016 at 9:49 pm	
+
+    I am trying to run this on PX6-300d.
+
+    I login with root user, download scripts, its ok.
+    When I run, I could not write config, and then run step by step to check.
+
+    I get “mount: warning: /tmp/apps seems to mounted read-only”.
+
+    Whats is wrong?
+
+    May be its not compatible with px6-300d?
+
+    Thanks
+
+    Job
+    Reply
+        Steven says:	
+        March 11, 2016 at 9:07 am	
+
+        this tutorial is for ix4-300d, i haven’t tested with the px6-300d.
+        Reply
+    Steven says:	
+    September 4, 2017 at 7:29 pm	
+
+    Just updated to 4.1.306.34329 without problems. go ahead
+    Reply
+    Wim Matthijs says:	
+    August 26, 2019 at 11:19 pm	
+
+    Awesome blog and script, kudoz to that!
+    So i recently FOUND a broken PS3 on the street, it had a corrupted file system, formatted it and reinstalled fresh PS3 OS, works like a charm.
+    I want to use a popular way of hosting PS3 games on my old ix-400d NAS.
+    There is a tool called PS3netsrv that does that job.
+    I have the tool up and running on the NAS? But for some annoying reason it won’t start up with the script!
+
+    weird because if ssh into the NAS after boot and bash init-opt.sh it DOES work…
+
+    my script :
+
+    #!/bin/sh
+    rm /opt/init-opt.log
+    echo “Last bootup:” >> /opt/init-opt.log
+    date >> /opt/init-opt.log
+    echo “Wait one minute, so that the storage pool is mounted” >> /opt/init-opt.log
+    sleep 1m
+
+    Services after this line
+
+    #start ps3netsrv
+    echo “attempting to start ps3netsrv”
+    cd /mnt/pools/A/A0/ps3netserv/webMAN/Projects/ps3netsrv
+    nohup ./ps3netsrv /mnt/pools/A/A0/ps3netserv/ps3netsrv &
+
+    Services before this line
+
+    sleep 360d
+    reboot
+
+    see anything wrong? any tips to get it running on startup?
+    I know it might have been a while since anybody posted in this thread, but still any suggestion is welcome 🙂
+
+    cheers,
+
+    Wim
+    Reply
+        Steven says:	
+        August 30, 2019 at 3:57 pm	
+
+        hmm, you could try redirecting the output of nohup to the logfile and see what the actual error is.
+        Reply
+    Martin Harding says:	
+    January 15, 2022 at 5:56 pm	
+
+    When executing editconfig.sh, mknod is returning an invalid mode message – I’ve checked the /dev directory and the loop3 node is not being created. Until I know what’s going on, I’m not going near a restart – I’d rather not brick my NAS!
+    Reply
+
+Leave a Reply
+
+Your email address will not be published. Required fields are marked *
+
+Comment *
+
+Name *
+
+Email *
+
+Website
+
+Notify me of follow-up comments by email.
+
+Notify me of new posts by email.
+
+PrevPreviousInstall Package Manager on IOmega/Lenovo IX4-300d NAS
+NextMinecraft Server on ix4-300d NASNext
+On Key
+Related Posts
+Arcade Cabinet – Installing Emulators & Games
+
+This is the last part of the DIY Arcade cabinet tutorial series. In this guide, I will show the overall steps to add an emulator.
+Share&Like:
+
+    FacebookTwitterWhatsAppPinterestLinkedInPrintRedditTumblrTelegramPocket
+
+Like this:
+Loading...
+Arcade Cabinet – Setup Hyperspin & Controllers
+
+This part of the DIY Arcade guide will cover the installation and setup of the main software on your arcade. This includes: Setting up windows,
+Share&Like:
+
+    FacebookTwitterWhatsAppPinterestLinkedInPrintRedditTumblrTelegramPocket
+
+Like this:
+Loading...
+Arcade Cabinet – Installing & Wiring Cabinet Electronics
+
+In this part, I will install the electronics in the main cabinet. this includes the computer, speakers, cabinet lighting, coin doors, in cabinet lighting, fans,
+Share&Like:
+
+    FacebookTwitterWhatsAppPinterest1LinkedInPrintRedditTumblrTelegramPocket
+
+Like this:
+Loading...
+Arcade Cabinet – Building the Control Panel
+
+This part will cover the build of the control panel. This includes the building of the control panel, drilling and installing buttons & joysticks, wiring
+Share&Like:
+
+    FacebookTwitterWhatsAppPinterestLinkedInPrintRedditTumblrTelegramPocket
+
+Like this:
+Loading...
+Arcade Cabinet – Building the Arcade Cabinet
+
+This part will cover the assembly of the arcade cabinet. As well as creating cutouts for coin doors, speakers, wheels, power button, RJ45 connector…
+Share&Like:
+
+    FacebookTwitterWhatsAppPinterestLinkedInPrintRedditTumblrTelegramPocket
+
+Like this:
+Loading...
